@@ -81,11 +81,15 @@ a flood crossing the whole mesh needs more bridge-to-bridge hops as `n` grows.
 | 93 | 0.596 | 2 500 | 5 348 | 0.863 | 3 |
 | 98 | 0.606 | 2 454 | 5 308 | 0.862 | 3 |
 
-Raw output: [`out/scale_sweep.csv`](out/scale_sweep.csv). Graphs:
-[`delivery_ratio_vs_n.png`](out/delivery_ratio_vs_n.png) ·
-[`latency_vs_n.png`](out/latency_vs_n.png) ·
-[`dup_suppress_vs_n.png`](out/dup_suppress_vs_n.png) ·
-[`hop_count_vs_n.png`](out/hop_count_vs_n.png)
+Raw output: [`out/scale_sweep.csv`](out/scale_sweep.csv).
+
+![Delivery ratio vs device count](out/delivery_ratio_vs_n.png)
+
+![Latency vs device count](out/latency_vs_n.png)
+
+![Dup-suppress rate vs device count](out/dup_suppress_vs_n.png)
+
+![Hop-count mode vs device count](out/hop_count_vs_n.png)
 
 **Trends.**
 
