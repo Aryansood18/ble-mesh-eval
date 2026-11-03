@@ -1,0 +1,10 @@
+metric,T1_line,T2_clique,T3_room_scale
+Delivery ratio (mean),0.873,1.000,0.877
+Latency median (ms),625,575,780
+Latency 95th pct (ms),1323,914,1835
+Hop-count mode,1,1,1
+Dup-suppress rate,0.375,0.743,0.403
+Battery idle (mAh/30min) screen-off,0.65
+Battery idle (mAh/30min) screen-on,1.3
+Battery active (mAh/30min) screen-off,1.01
+Battery active (mAh/30min) screen-on,1.6600000000000001
