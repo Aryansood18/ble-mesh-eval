@@ -52,27 +52,34 @@ correctly dropped).
 
 ---
 
-## 2. Results — scaling device count (3 → 29 devices, 100 trials per step)
+## 2. Results — scaling device count (3 → 98 devices, 80 trials per step)
 
 Topology: `scaled_room(n)` — the T3 shape generalised, i.e. bridged cliques whose number
-and size both grow with `n` (see `sim/topologies.py`).
+and size both grow with `n` (see `sim/topologies.py`). Number of cliques grows as `√n`, so
+a flood crossing the whole mesh needs more bridge-to-bridge hops as `n` grows.
 
 | N | Delivery ratio | Latency median (ms) | Latency 95th pct (ms) | Dup-suppress rate | Hop-count mode |
 |---|---|---|---|---|---|
-| 3 | 0.910 | 763 | 1 744 | 0.402 | 1 |
-| 5 | 0.873 | 763 | 1 758 | 0.402 | 1 |
-| 7 | 0.858 | 1 077 | 2 564 | 0.428 | 1 |
-| 9 | 0.880 | 1 317 | 2 956 | 0.580 | 1 |
-| 11 | 0.905 | 1 233 | 2 911 | 0.576 | 1 |
-| 13 | 0.873 | 1 544 | 3 764 | 0.583 | 1 |
-| 15 | 0.910 | 1 578 | 3 861 | 0.580 | 1 |
-| 17 | 0.891 | 1 609 | 3 831 | 0.686 | 1 |
-| 19 | 0.909 | 1 651 | 3 915 | 0.686 | 1 |
-| 21 | 0.911 | 1 991 | 4 889 | 0.682 | 1 |
-| 23 | 0.881 | 1 938 | 4 763 | 0.684 | **3** |
-| 25 | 0.843 | 1 854 | 4 555 | 0.750 | **3** |
-| 27 | 0.858 | 1 847 | 4 660 | 0.750 | **3** |
-| 29 | 0.816 | 1 900 | 4 827 | 0.749 | 1 |
+| 3 | 0.908 | 760 | 1 732 | 0.403 | 1 |
+| 8 | 0.848 | 1 073 | 2 524 | 0.425 | 1 |
+| 13 | 0.886 | 1 551 | 3 574 | 0.583 | 1 |
+| 18 | 0.847 | 1 546 | 3 936 | 0.681 | 1 |
+| 23 | 0.840 | 1 770 | 4 755 | 0.682 | 1 |
+| 28 | 0.868 | 1 850 | 4 530 | 0.747 | **3** |
+| 33 | 0.807 | 2 024 | 5 079 | 0.743 | 3 |
+| 38 | 0.808 | 2 120 | 5 110 | 0.789 | 3 |
+| 43 | 0.694 | 2 142 | 5 049 | 0.789 | 3 |
+| 48 | 0.744 | 2 315 | 5 342 | 0.788 | 3 |
+| 53 | 0.763 | 2 215 | 4 852 | 0.822 | 3 |
+| 58 | 0.658 | 2 056 | 4 870 | 0.822 | 3 |
+| 63 | 0.680 | 2 213 | 5 191 | 0.820 | 3 |
+| 68 | 0.700 | 2 274 | 5 216 | 0.844 | 3 |
+| 73 | 0.654 | 2 420 | 5 240 | 0.843 | 3 |
+| 78 | 0.638 | 2 436 | 5 202 | 0.844 | 3 |
+| 83 | 0.645 | 2 401 | 5 076 | 0.862 | 3 |
+| 88 | 0.629 | 2 331 | 5 164 | 0.863 | 3 |
+| 93 | 0.596 | 2 500 | 5 348 | 0.863 | 3 |
+| 98 | 0.606 | 2 454 | 5 308 | 0.862 | 3 |
 
 Raw output: [`out/scale_sweep.csv`](out/scale_sweep.csv). Graphs:
 [`delivery_ratio_vs_n.png`](out/delivery_ratio_vs_n.png) ·
@@ -82,20 +89,28 @@ Raw output: [`out/scale_sweep.csv`](out/scale_sweep.csv). Graphs:
 
 **Trends.**
 
-- **Delivery ratio stays roughly flat** (0.82–0.91) across the full 3→29 range. Growing the
-  mesh doesn't meaningfully degrade reachability in this model, because `scaled_room`
-  keeps the same bridged-clique shape at every size rather than stretching into one long,
-  fragile chain.
-- **Latency roughly triples** from N=3 (median 763 ms) to N=29 (median 1 900 ms), and the
-  95th percentile grows faster still (1 744 ms → 4 827 ms). More devices means more
-  cliques to cross and more hops end-to-end, and each hop adds a full connect-cost, so
-  latency compounds with network diameter, not device count directly.
-- **Dup-suppress rate nearly doubles**, from 0.40 at N=3 to ~0.75 by N=25+. Denser meshes
-  mean a device hears the same flooded packet from more neighbours, so a larger share of
-  arrivals are correctly-dropped duplicates rather than new deliveries.
-- **Hop-count mode shifts from 1 to 3** once the network grows past ~21 devices — enough
-  cliques now exist that the *most common* path length is no longer a single hop, a sign
-  the flood is genuinely spanning a multi-clique structure rather than staying local.
+- **Delivery ratio degrades as the mesh grows past ~30 devices** — it holds near 0.84–0.91
+  up to N≈25, then drifts down to roughly 0.60–0.70 by N≈90. At small N there are only a
+  couple of cliques and one bridge, so a flood rarely fails to cross; at large N there are
+  many cliques chained together, and the flood has to survive every bridge-to-bridge hop in
+  sequence — one weak link anywhere in a longer chain is enough to strand an entire distant
+  clique, which pulls the mean down. This is the single most important scaling finding:
+  **reachability is bridge-chain-length limited, not device-count limited** in this
+  topology.
+- **Latency roughly triples** from N=3 (median 760 ms) to N≈98 (median ~2 450 ms), and the
+  95th percentile grows similarly (1 732 ms → ~5 300 ms), then both roughly plateau past
+  N≈50. More cliques means more hops end-to-end, and each hop re-pays a full connect cost,
+  so latency compounds with network diameter (number of cliques to cross), not with raw
+  device count — the plateau suggests `√n` clique growth caps how much the diameter keeps
+  increasing.
+- **Dup-suppress rate climbs steadily and keeps climbing**, from 0.40 at N=3 to ~0.86 by
+  N≈90 — unlike latency it hasn't plateaued in this range. Larger cliques mean a device
+  hears the same flooded packet from more neighbours at once, so an ever-larger share of
+  arrivals are correctly-dropped duplicates.
+- **Hop-count mode jumps from 1 to 3 once N passes ~25** and stays at 3 for the rest of the
+  sweep — past that point most devices are two cliques away from the sender rather than
+  one, a clear signature of the flood genuinely spanning a multi-clique structure instead
+  of staying local.
 
 ---
 
@@ -139,7 +154,7 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 python3 run_table3.py --trials 200 --csv out/table3_simulated.csv
-python3 run_scale_sweep.py --min-n 3 --max-n 29 --step 2 --trials 100
+python3 run_scale_sweep.py --min-n 3 --max-n 100 --step 5 --trials 80
 ```
 
 ## 6. Calibrating against physical trials
